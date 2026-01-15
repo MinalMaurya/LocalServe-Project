@@ -1,0 +1,347 @@
+/* ───────────────────────────────
+   Global Light Theme Overrides
+   (Ensures no dark navy sections)
+   ─────────────────────────────── */
+
+:root {
+  --bg: #f5f7fa;
+  --text-main: #111827;
+  --text-muted: #6b7280;
+  --primary: #2563eb;
+  --primary-light: #dbeafe;
+  --border: #e5e7eb;
+  --card: #ffffff;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+}
+
+/* Body reset */
+body {
+  background: var(--bg) !important;
+  color: var(--text-main) !important;
+  font-family: "Inter", sans-serif;
+}
+
+/* HEADER */
+.header {
+  background: white;
+  border-bottom: 1px solid var(--border);
+}
+
+.header-container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 14px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.nav-links a {
+  margin-left: 24px;
+  text-decoration: none;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.nav-links a.active {
+  color: var(--primary);
+}
+
+/* LAYOUT GENERAL */
+.app-container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 40px 20px;
+}
+
+.app-title {
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 24px;
+}
+
+/* SEARCH INPUT */
+.search-input {
+  width: 100%;
+  max-width: 420px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 15px;
+  margin-bottom: 20px;
+}
+
+/* ───────────────────────────────
+   FILTER BAR (FULL WHITE VERSION)
+   ─────────────────────────────── */
+
+.filters {
+  background: #ffffff !important;
+  border-radius: 24px !important;
+  padding: 24px !important;
+  margin-bottom: 30px !important;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06) !important;
+}
+
+.filters select,
+.filters input {
+  background: #ffffff !important;
+  color: #111827 !important;
+  border: 1px solid var(--border) !important;
+  padding: 10px 12px !important;
+  border-radius: 10px !important;
+}
+
+.filters label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.filters .form-check-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* RESET LINK */
+.filters button.btn-link {
+  color: var(--primary) !important;
+  font-weight: 600;
+}
+
+/* SUMMARY TEXT */
+.filters .text-muted {
+  color: var(--text-muted) !important;
+}
+
+/* ───────────────────────────────
+   SERVICE CARDS
+   ─────────────────────────────── */
+
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.card {
+  background: white !important;
+  border-radius: 20px !important;
+  border: 1px solid var(--border) !important;
+  transition: 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 30px rgba(0, 0, 0, 0.08);
+}
+
+/* SERVICE TEXT */
+.service-name {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.service-location {
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+.tag {
+  background: var(--primary-light);
+  color: var(--primary);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Status Colors */
+.text-success {
+  color: var(--success) !important;
+}
+
+.text-warning {
+  color: var(--warning) !important;
+}
+
+.text-danger {
+  color: var(--danger) !important;
+}
+
+/* Heart Icon */
+.heart-icon {
+  color: var(--primary);
+}
+
+/* ───────────────────────────────
+   EMPTY / LOADING / ERROR STATES
+   ─────────────────────────────── */
+
+.state {
+  background: white !important;
+  border: 1px dashed var(--border) !important;
+  border-radius: 16px !important;
+  padding: 40px 20px !important;
+  text-align: center !important;
+  color: var(--text-main) !important;
+}
+
+.state h2 {
+  font-size: 24px;
+  margin-bottom: 12px;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 3px solid #e2e8f0;
+  border-top-color: var(--primary);
+  margin: 0 auto 0.75rem;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+/* ---------- Shared auth layout (user & vendor) ---------- */
+
+.auth-page {
+  min-height: calc(100vh - 60px); /* below header */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 16px;
+  background: linear-gradient(135deg, #2563eb, #60a5fa);
+}
+
+.auth-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  max-width: 960px;
+  width: 100%;
+  background: #ffffff;
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+.auth-card__left {
+  padding: 40px 32px;
+  background: radial-gradient(circle at top left, #eff6ff, #dbeafe);
+  color: #0f172a;
+}
+
+.auth-card__right {
+  padding: 32px;
+  background: #ffffff;
+}
+
+.auth-title {
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+.auth-subtitle {
+  font-size: 14px;
+  color: #64748b;
+  margin-bottom: 20px;
+}
+
+.auth-bullets {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+  font-size: 13px;
+  color: #475569;
+}
+
+.auth-bullets li + li {
+  margin-top: 6px;
+}
+
+@media (max-width: 768px) {
+  .auth-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .auth-card__left {
+    display: none;
+  }
+}
+
+/* ---------- Vendor dashboard shell ---------- */
+
+.vendor-page {
+  background: #f8fafc;
+  min-height: calc(100vh - 60px);
+  padding: 24px 0 40px;
+}
+
+.vendor-shell {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.vendor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.vendor-stat-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 16px 18px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+}
+
+.vendor-stat-card .label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+
+.vendor-stat-card .value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+/* simple status bar */
+
+.vendor-bar {
+  display: flex;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #e2e8f0;
+}
+
+.vendor-bar__segment {
+  height: 100%;
+}
+
+.vendor-bar__segment--pending {
+  background: #fbbf24;
+}
+
+.vendor-bar__segment--accepted {
+  background: #22c55e;
+}
+
+.vendor-bar__segment--rejected {
+  background: #ef4444;
+}

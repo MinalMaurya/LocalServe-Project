@@ -1,0 +1,190 @@
+[
+  {
+     "id": 1,
+    "name": "ComfortNest Home Care",
+    "category": "Home Service",
+    "location": "Mumbai",
+    "status": "Available",
+    "rating": 4.9,
+   "isStatic": true,
+    "isVerified": false
+  },
+  {
+    "id": 2,
+    "name": "QuickFix Plumbing",
+    "category": "Plumber",
+    "location": "Pune",
+    "status": "Busy",
+    "rating": 4.5,
+    "isStatic": true,
+    "isVerified": false
+  },
+  {
+    "id": 3,
+    "name": "TutorNest Academy",
+    "category": "Tutor",
+    "location": "Delhi",
+    "status": "Offline",
+    "rating": 4.3,
+    "isStatic": true,
+    "isVerified": false
+  },
+  {
+    "id": 4,
+    "name": "AutoCare Mechanics",
+    "category": "Mechanic",
+    "location": "Bangalore",
+    "status": "Available",
+    "rating": 4.8,
+   "isStatic": true,
+    "isVerified": false
+  },
+  {
+    "id": 5,
+    "name": "HomeFix Maintenance",
+    "category": "Home Service",
+    "location": "Chennai",
+    "status": "Available",
+    "isStatic": true,
+    "isVerified": false
+  },
+  {
+    "id": 6,
+    "name": "BrightSpark Electric Co.",
+    "category": "Electrician",
+    "location": "Mumbai",
+    "status": "Busy",
+    "rating": 4.6,
+    "isStatic": true,
+    "isVerified": false
+  },
+  {
+    "id": 7,
+    "name": "CityFlow Plumbers",
+    "category": "Plumber",
+    "location": "Delhi",
+    "status": "Available",
+    "rating": 4.2,
+    "isStatic": true,
+    "isVerified": false
+  },
+  {
+    "id": 8,
+    "name": "TopGrade Home Tutors",
+    "category": "Tutor",
+    "location": "Pune",
+    "status": "Available",
+    "rating": 4.9,
+   "isStatic": true,
+    "isVerified": false
+  },
+  {
+    "id": 9,
+    "name": "Metro Auto Garage",
+    "category": "Mechanic",
+    "location": "Mumbai",
+    "status": "Busy",
+    "rating": 4.1,
+    "isStatic": true,
+    "isVerified": false
+  },
+  {
+    "id": 10,
+    "name": "CareNest Home Services",
+    "category": "Home Service",
+    "location": "Bangalore",
+    "status": "Offline",
+    "rating": 4.0,
+    "isStatic": true,
+    "isVerified": false  },
+  {
+    "id": 11,
+    "name": "Skyline Electric & Repairs",
+    "category": "Electrician",
+    "location": "Chennai",
+    "status": "Available",
+    "rating": 4.9,
+    "isStatic": true,
+    "isVerified": false
+  },
+  {
+    "id": 12,
+    "name": "FlowRight Plumbing",
+    "category": "Plumber",
+    "location": "Bangalore",
+    "status": "Available",
+    "rating": 4.6,
+   "isStatic": true,
+    "isVerified": false
+  },
+  {
+    "id": 13,
+    "name": "FuturePrep Coaching",
+    "category": "Tutor",
+    "location": "Chennai",
+    "status": "Busy",
+    "rating": 4.5,
+    "isStatic": true,
+    "isVerified": false
+  },
+  {
+    "id": 14,
+    "name": "Highway AutoCare",
+    "category": "Mechanic",
+    "location": "Delhi",
+    "status": "Available",
+    "rating": 4.3,
+    "isStatic": true,
+    "isVerified": false
+  },
+  {
+    "id": 15,
+    "name": "SafeHome Services",
+    "category": "Home Service",
+    "location": "Pune",
+    "status": "Available",
+    "rating": 4.7,
+    "isStatic": true,
+    "isVerified": false
+  },
+  {
+    "id": 16,
+    "name": "UrbanSpark Electricians",
+    "category": "Electrician",
+    "location": "Delhi",
+    "status": "Offline",
+    "rating": 4.1,
+    "isStatic": true,
+    "isVerified": false
+  },
+  {
+    "id": 17,
+    "name": "PrimePipe Plumbing",
+    "category": "Plumber",
+    "location": "Mumbai",
+    "status": "Available",
+    "rating": 4.8,
+    "isStatic": true,
+    "isVerified": false
+  },
+  {
+    "id": 18,
+    "name": "MentorHub Tutors",
+    "category": "Tutor",
+    "location": "Bangalore",
+    "status": "Available",
+    "rating": 4.6,
+   "isStatic": true,
+    "isVerified": false
+  },
+  {
+    "id": 19,
+    "name": "RapidFix Mechanics",
+    "category": "Mechanic",
+    "location": "Pune",
+    "status": "Busy",
+    "rating": 4.2,
+    "isStatic": true,
+    "isVerified": false
+  }
+]
