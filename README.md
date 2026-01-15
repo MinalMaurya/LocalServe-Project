@@ -153,6 +153,10 @@ src/
 ├── App.css
 └── index.js
 
+```
+
+
+
 ## 🧱 How Data Is Stored
 
 LocalServe uses the browser's **LocalStorage** to simulate a backend database.  
@@ -180,10 +184,12 @@ Prerequisites
 	-	npm (installed with Node)
 
 ## 📁 Run the Project
-in commond type 
-- cd local-service-discovery
-- npm install
-- npm start 
+
+```bash
+cd local-service-discovery
+npm install
+npm start
+```
 ## 🌐 After Starting
 	-	App runs at: http://localhost:3000
 	-	Hot reload enabled
