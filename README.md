@@ -184,22 +184,45 @@ Currently LocalStorage-based, but structured for:
 - Cloud file storage  
 ---
 
-## 📸 Screenshots & Demo
+## 📸 Screenshots & UI Walkthrough
 
-### 🏠 Home & Service Discovery
+Below are selected screenshots showcasing different user roles and key features of **LocalServe**.
 
+---
 
-### 👤 Customer Experience
+### 👀 Guest Experience
+Browse services without login and get prompted for authentication on action.
 
+<img src="screenshots/GuestHome.png" width="100%" />
+<img src="screenshots/GuestServiceCard.png" width="100%" />
 
-### 👨‍🔧 Vendor Dashboard
+---
 
+### 🧑‍💼 Customer Flow
+Service details, requests, and request tracking.
+
+<img src="screenshots/UserServiceCardDetails1.png" width="100%" />
+<img src="screenshots/UserServiceCardDetails2.png" width="100%" />
+<img src="screenshots/UserMyRequest.png" width="100%" />
+
+---
+
+### 👨‍🔧 Service Provider (Vendor) Dashboard
+Vendor analytics, profile management, and reviews.
+
+<img src="screenshots/ServiceProviderDashboard1.png" width="100%" />
+<img src="screenshots/ServiceProviderDashboard2.png" width="100%" />
+<img src="screenshots/ServiceProviderReview.png" width="100%" />
+
+---
 
 ### 🛡️ Admin Panel
+Service moderation, analytics, and removed services management.
 
+<img src="screenshots/AdminDashboard.png" width="100%" />
+<img src="screenshots/AdminAnalytics.png" width="100%" />
+<img src="screenshots/AdminRemovedService.png" width="100%" />
 
-### 🎥 Demo Video
-▶️ Watch the full demo here:  
 
 --
 
