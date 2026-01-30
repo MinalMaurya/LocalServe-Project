@@ -223,9 +223,17 @@ Service moderation, analytics, and removed services management.
 <img src="screenshots/AdminAnalytics.png" width="100%" />
 <img src="screenshots/AdminRemovedService.png" width="100%" />
 
+## 🎥 Demo Video (2:39)
 
---
+▶️ Watch the complete walkthrough of **LocalServe** covering:
+- Guest browsing & authentication flow
+- Customer service booking & tracking
+- Vendor dashboard, analytics & reviews
+- Admin moderation & platform analytics
 
+🔗 **YouTube Demo (Unlisted):**  
+[![Watch Demo](screenshots/GuestHome.png)](https://youtu.be/-TjLtoqfQrU)
+---
 ## 📂 Folder Structure
 
 Your project contains **exactly these files**, and the README now includes them:
