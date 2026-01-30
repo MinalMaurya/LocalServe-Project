@@ -26,6 +26,11 @@ export default function VendorReviewsPage() {
   const [starFilter, setStarFilter] = useState("all"); // "all" | "5" | "4"...
   const [sortOrder, setSortOrder] = useState("newest"); // "newest" | "oldest"
 
+  const [openReplyForId, setOpenReplyForId] = useState(null); // which review is expanded
+  const [replyDrafts, setReplyDrafts] = useState({}); // { [reviewId]: "draft text" }
+   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   /* 1) Load which vendor is logged in (same idea as dashboard) */
   useEffect(() => {
     try {
@@ -159,6 +164,51 @@ export default function VendorReviewsPage() {
     );
   };
 
+  /* 6) Reply handlers (Option C: expandable section + editable) */
+  const handleOpenReply = (rev) => {
+    if (!rev.id) return; // require id for stable replies
+    setOpenReplyForId(rev.id);
+    setReplyDrafts((prev) => ({
+      ...prev,
+      [rev.id]: rev.vendorReply || "",
+    }));
+  };
+
+  const handleReplyChange = (reviewId, value) => {
+    setReplyDrafts((prev) => ({
+      ...prev,
+      [reviewId]: value,
+    }));
+  };
+
+  const handleReplySubmit = (e, rev) => {
+    e.preventDefault();
+    if (!rev.id) return;
+
+    const draft = (replyDrafts[rev.id] || "").trim();
+    if (!draft) return;
+
+    const now = new Date().toISOString();
+
+    const updatedReviews = reviews.map((r) =>
+      r.id === rev.id
+        ? {
+            ...r,
+            vendorReply: draft,
+            vendorReplyUpdatedAt: now,
+          }
+        : r
+    );
+
+    setReviews(updatedReviews);
+    localStorage.setItem(VENDOR_REVIEWS_KEY, JSON.stringify(updatedReviews));
+    setOpenReplyForId(null);
+  };
+
+  const handleCancelReply = () => {
+    setOpenReplyForId(null);
+  };
+
   return (
     <div className="vendor-reviews-page">
       <style>{`
@@ -169,7 +219,7 @@ export default function VendorReviewsPage() {
 
         /* shared hero like other pages */
         .page-hero {
-           background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+          background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
           padding: 56px 16px 72px;
           color: #fff;
         }
@@ -451,6 +501,103 @@ export default function VendorReviewsPage() {
           font-size: 14px;
         }
 
+        /* ✅ Vendor reply styles */
+        .review-vendor-reply {
+          margin-top: 10px;
+          padding-top: 10px;
+          border-top: 1px dashed #e5e7eb;
+        }
+
+        .review-vendor-reply-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 6px;
+        }
+
+        .review-vendor-reply-label {
+          font-size: 12px;
+          font-weight: 600;
+          color: #1d4ed8;
+        }
+
+        .review-vendor-reply-text {
+          font-size: 13px;
+          color: #374151;
+          background: #eff6ff;
+          border-radius: 10px;
+          padding: 8px 10px;
+          margin-bottom: 6px;
+        }
+
+        .reply-toggle-btn {
+          border-radius: 999px;
+          border: 1px solid #d1d5db;
+          background: #f9fafb;
+          font-size: 12px;
+          padding: 4px 10px;
+          cursor: pointer;
+          font-weight: 600;
+        }
+
+        .reply-toggle-btn:hover {
+          background: #e5e7eb;
+        }
+
+        .reply-form {
+          margin-top: 6px;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        .reply-textarea {
+          width: 100%;
+          border-radius: 10px;
+          border: 1px solid #d1d5db;
+          padding: 8px 10px;
+          font-size: 13px;
+          min-height: 60px;
+          resize: vertical;
+          outline: none;
+        }
+
+        .reply-textarea:focus {
+          border-color: #2563eb;
+          box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.25);
+        }
+
+        .reply-actions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 8px;
+        }
+
+        .reply-cancel-btn {
+          border-radius: 999px;
+          border: 1px solid #d1d5db;
+          background: #ffffff;
+          font-size: 12px;
+          padding: 6px 12px;
+          cursor: pointer;
+        }
+
+        .reply-save-btn {
+          border-radius: 999px;
+          border: none;
+          background: #2563eb;
+          color: #ffffff;
+          font-size: 12px;
+          padding: 6px 14px;
+          cursor: pointer;
+          font-weight: 600;
+        }
+
+        .reply-save-btn:hover {
+          background: #1d4ed8;
+        }
+
         @media (max-width: 768px) {
           .reviews-summary-card {
             grid-template-columns: 1fr;
@@ -511,7 +658,9 @@ export default function VendorReviewsPage() {
             {[5, 4, 3, 2, 1].map((star) => {
               const count = starCounts[star] || 0;
               const pct =
-                totalReviews === 0 ? 0 : Math.round((count / totalReviews) * 100);
+                totalReviews === 0
+                  ? 0
+                  : Math.round((count / totalReviews) * 100);
               return (
                 <div key={star} className="summary-row">
                   <div className="summary-row-label">
@@ -605,6 +754,11 @@ export default function VendorReviewsPage() {
               const reviewerName =
                 rev.customerName || rev.reviewerName || "Customer";
 
+              const commentText = rev.comment || rev.text || "";
+
+              const isReplyOpen =
+                !!rev.id && openReplyForId === rev.id;
+
               return (
                 <div key={rev.id || idx} className="review-card">
                   <div className="review-card-header">
@@ -632,9 +786,65 @@ export default function VendorReviewsPage() {
                     </div>
                   </div>
 
-                  {rev.comment && (
-                    <p className="review-comment">“{rev.comment}”</p>
+                  {commentText && (
+                    <p className="review-comment">“{commentText}”</p>
                   )}
+
+                  {/* ✅ Vendor reply block (expandable, editable) */}
+                  <div className="review-vendor-reply">
+                    <div className="review-vendor-reply-header">
+                      <span className="review-vendor-reply-label">
+                        Your response
+                      </span>
+
+                      {rev.id && (
+                        <button
+                          type="button"
+                          className="reply-toggle-btn"
+                          onClick={() => handleOpenReply(rev)}
+                        >
+                          {rev.vendorReply ? "Edit reply" : "Reply"}
+                        </button>
+                      )}
+                    </div>
+
+                    {rev.vendorReply && (
+                      <div className="review-vendor-reply-text">
+                        {rev.vendorReply}
+                      </div>
+                    )}
+
+                    {isReplyOpen && (
+                      <form
+                        className="reply-form"
+                        onSubmit={(e) => handleReplySubmit(e, rev)}
+                      >
+                        <textarea
+                          className="reply-textarea"
+                          placeholder="Write a helpful, professional reply..."
+                          value={replyDrafts[rev.id] || ""}
+                          onChange={(e) =>
+                            handleReplyChange(rev.id, e.target.value)
+                          }
+                        />
+                        <div className="reply-actions">
+                          <button
+                            type="button"
+                            className="reply-cancel-btn"
+                            onClick={handleCancelReply}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            className="reply-save-btn"
+                          >
+                            Save reply
+                          </button>
+                        </div>
+                      </form>
+                    )}
+                  </div>
                 </div>
               );
             })

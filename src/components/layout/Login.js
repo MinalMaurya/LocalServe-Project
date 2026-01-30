@@ -27,7 +27,6 @@ export default function Login() {
     visible: { opacity: 1, y: 0 },
   };
 
-  // ⭐⭐⭐ FIXED — Full Correct handleLogin Function
   const handleLogin = () => {
     const newErrors = {};
 
@@ -62,7 +61,7 @@ export default function Login() {
 
     localStorage.setItem("authUser", JSON.stringify(matchedUser));
 
-    // ⭐⭐⭐ Role-based redirect
+  
     if (matchedUser.role === "vendor") {
       navigate("/vendor/dashboard");
     } else {

@@ -128,21 +128,7 @@ export default function ServiceFilters({
               </div>
             )}
 
-            <div className="form-check form-switch">
-              <input
-                className="form-check-input"
-                type="checkbox"
-                id="onlyVerifiedSwitch"
-                checked={filters.onlyVerified}
-                onChange={handleCheckboxChange("onlyVerified")}
-              />
-              <label
-                className="form-check-label small"
-                htmlFor="onlyVerifiedSwitch"
-              >
-                Show only verified
-              </label>
-            </div>
+           
           </div>
         </div>
 

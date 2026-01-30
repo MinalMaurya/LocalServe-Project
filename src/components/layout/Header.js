@@ -1,4 +1,4 @@
-// src/components/layout/Header.jsx
+
 import { NavLink, useNavigate } from "react-router-dom";
 
 export default function Header() {
@@ -9,10 +9,14 @@ export default function Header() {
   const homePath = isVendor ? "/vendor/dashboard" : "/";
 
   const logout = () => {
-    localStorage.removeItem("authUser");
-    localStorage.removeItem("isLoggedIn"); // 🔹 keep in sync with rest of app
-    navigate("/login");
-  };
+  const confirmLogout = window.confirm("Are you sure you want to logout?");
+  if (!confirmLogout) return;
+
+  localStorage.removeItem("authUser");
+  localStorage.removeItem("isLoggedIn");
+
+  navigate("/"); 
+};
 
   return (
     <nav className="navbar navbar-expand-lg navbar-light bg-white border-bottom">
@@ -34,7 +38,7 @@ export default function Header() {
       `}</style>
 
       <div className="container">
-        {/* 🔹 Brand: same always */}
+        {/*  Brand: same always */}
         <span className="brand" onClick={() => navigate(homePath)}>
           LocalServe
         </span>
@@ -53,7 +57,6 @@ export default function Header() {
           id="mainHeaderNav"
         >
           {user ? (
-            // ✅ LOGGED-IN HEADER (same as before)
             <>
               <NavLink className="nav-link d-inline mx-3" to={homePath}>
                 Home
@@ -85,7 +88,7 @@ export default function Header() {
               </button>
             </>
           ) : (
-            // 🔓 NOT LOGGED IN: only Login + Sign up
+            //  NOT LOGGED IN: only Login + Sign up
             <div className="d-flex align-items-center">
                <NavLink className="nav-link d-inline mx-3" to={homePath}>
                 Home
@@ -101,6 +104,12 @@ export default function Header() {
               </NavLink>
               <NavLink className="btn btn-sm btn-primary" to="/signup">
                 Sign Up
+              </NavLink>
+              <NavLink 
+                className="btn btn-sm btn-outline-primary me-2 mx-3"
+                to="/admin/login"
+              >
+                Admin
               </NavLink>
             </div>
           )}

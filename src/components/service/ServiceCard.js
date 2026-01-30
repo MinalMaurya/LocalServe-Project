@@ -1,4 +1,3 @@
-// src/components/service/ServiceCard.jsx
 import {
   FaHeart,
   FaRegHeart,
@@ -27,9 +26,9 @@ const categoryIcon = {
 
 export default function ServiceCard({
   service,
+  rankMeta,
   isFavorite,
   onToggleFavorite,
-  // ⭐ you can keep this prop, but we’ll ignore it and use role instead
   isLoggedIn,
 }) {
   const rating = service.rating || 0;
@@ -42,31 +41,26 @@ export default function ServiceCard({
   const navigate = useNavigate();
 
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
-
-  // ⭐ NEW: read user + role from localStorage
   const authUser = JSON.parse(localStorage.getItem("authUser") || "null");
-  const role = authUser?.role || "guest"; // "customer" | "vendor" | "guest"
-  const isRealUser = !!authUser && role !== "guest"; // 👈 our final condition
+  const role = authUser?.role || "guest";
+  const isRealUser = !!authUser && role !== "guest";
 
   const handleViewDetails = (e) => {
     e.preventDefault();
     e.stopPropagation();
-
-    // ⭐ CHANGED: use isRealUser instead of isLoggedIn
     if (!isRealUser) {
-      // 🔐 guest / not logged in → show mini prompt
       setShowAuthPrompt(true);
       return;
     }
-
-    // ✅ Logged in (customer/vendor) → go to details
-    navigate(`/service/${service.id}`);
+    navigate(`/service/${service.id}`, { state: { service } });
   };
 
   const handleCardClick = (e) => {
-    // entire card behaves like "view details" click
     handleViewDetails(e);
   };
+
+  // show only for top ranked cards (NOT all)
+  const showRecommended = !!rankMeta?.isTop;
 
   return (
     <div
@@ -76,14 +70,18 @@ export default function ServiceCard({
     >
       <style>{`
         .card.service-card-clickable {
-          border-radius: 20px;
+          border-radius: 22px;
           transition: all 0.35s ease;
           background: #ffffff !important;
           color: #0f172a;
         }
         .card.service-card-clickable:hover {
-          transform: translateY(-12px);
+          transform: translateY(-10px);
           box-shadow: 0 30px 60px rgba(37,99,235,0.25);
+        }
+        .card-body {
+          padding: 18px 18px 16px; /* a bit bigger */
+          min-height: 300px;       /* optional: makes card feel bigger */
         }
         .tag {
           background: #eef2ff;
@@ -105,24 +103,35 @@ export default function ServiceCard({
           align-items: center;
           gap: 4px;
         }
+        .recommended-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: #fff7ed;
+          border: 1px solid #fed7aa;
+          color: #9a3412;
+          padding: 5px 10px;
+          border-radius: 999px;
+          font-size: 12px;
+          font-weight: 800;
+          margin-top: 8px;
+        }
         .service-header-row {
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 8px;
         }
-
         .auth-prompt-overlay {
           position: absolute;
           inset: 0;
           background: rgba(15,23,42,0.52);
-          border-radius: 20px;
+          border-radius: 22px;
           display: flex;
           align-items: center;
           justify-content: center;
           z-index: 5;
         }
-
         .auth-prompt-card {
           background: #ffffff;
           border-radius: 18px;
@@ -131,26 +140,22 @@ export default function ServiceCard({
           text-align: center;
           box-shadow: 0 18px 40px rgba(15,23,42,0.35);
         }
-
         .auth-prompt-title {
           font-size: 15px;
           font-weight: 700;
           margin-bottom: 8px;
           color: #0f172a;
         }
-
         .auth-prompt-text {
           font-size: 13px;
           color: #64748b;
           margin-bottom: 12px;
         }
-
         .auth-prompt-actions {
           display: flex;
           justify-content: center;
           gap: 8px;
         }
-
         .auth-btn {
           border-radius: 999px;
           border: none;
@@ -159,12 +164,10 @@ export default function ServiceCard({
           padding: 7px 14px;
           cursor: pointer;
         }
-
         .auth-btn-primary {
           background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
           color: #ffffff;
         }
-
         .auth-btn-secondary {
           background: #e2e8f0;
           color: #0f172a;
@@ -173,9 +176,11 @@ export default function ServiceCard({
 
       <div className="card-body d-flex flex-column">
         <div className="d-flex justify-content-between align-items-start">
-          <div>
+          <div style={{ minWidth: 0 }}>
             <div className="service-header-row">
-              <h5 className="fw-bold mb-1">{service.name}</h5>
+              <h5 className="fw-bold mb-1" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {service.name}
+              </h5>
               {isVerified && (
                 <span className="verified-badge">
                   <FaCheckCircle />
@@ -183,6 +188,13 @@ export default function ServiceCard({
                 </span>
               )}
             </div>
+
+            {/*  only for top results */}
+            {showRecommended && (
+              <div className="recommended-badge" title="Top match near your location + high rating">
+                ⭐ Highly Recommended
+              </div>
+            )}
           </div>
 
           <span
@@ -206,6 +218,7 @@ export default function ServiceCard({
             {categoryIcon[service.category] || null}
             {service.category}
           </span>
+
           <span
             className={
               service.status === "Available"
@@ -224,19 +237,12 @@ export default function ServiceCard({
             {Array.from({ length: fullStars }).map((_, idx) => (
               <FaStar key={`full-${idx}`} className="text-warning me-1" />
             ))}
-            {hasHalf && (
-              <FaStarHalfAlt className="text-warning me-1" />
-            )}
+            {hasHalf && <FaStarHalfAlt className="text-warning me-1" />}
             {Array.from({ length: emptyStars }).map((_, idx) => (
-              <FaRegStar
-                key={`empty-${idx}`}
-                className="text-warning me-1"
-              />
+              <FaRegStar key={`empty-${idx}`} className="text-warning me-1" />
             ))}
           </div>
-          <span className="text-muted small">
-            {rating.toFixed(1)} / 5
-          </span>
+          <span className="text-muted small">{rating.toFixed(1)} / 5</span>
         </div>
 
         <button
@@ -249,36 +255,18 @@ export default function ServiceCard({
         </button>
       </div>
 
-      {/* 🔐 Auth prompt overlay now also checks isRealUser */}
       {showAuthPrompt && !isRealUser && (
-        <div
-          className="auth-prompt-overlay"
-          onClick={() => setShowAuthPrompt(false)}
-        >
-          <div
-            className="auth-prompt-card"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="auth-prompt-title">
-              Sign in to view details
-            </div>
+        <div className="auth-prompt-overlay" onClick={() => setShowAuthPrompt(false)}>
+          <div className="auth-prompt-card" onClick={(e) => e.stopPropagation()}>
+            <div className="auth-prompt-title">Sign in to view details</div>
             <div className="auth-prompt-text">
-              You need an account to view full details and send requests
-              to this service provider.
+              You need an account to view full details and send requests to this service provider.
             </div>
             <div className="auth-prompt-actions">
-              <button
-                className="auth-btn auth-btn-secondary"
-                type="button"
-                onClick={() => navigate("/signup")}
-              >
+              <button className="auth-btn auth-btn-secondary" type="button" onClick={() => navigate("/signup")}>
                 Sign up
               </button>
-              <button
-                className="auth-btn auth-btn-primary"
-                type="button"
-                onClick={() => navigate("/login")}
-              >
+              <button className="auth-btn auth-btn-primary" type="button" onClick={() => navigate("/login")}>
                 Log in
               </button>
             </div>

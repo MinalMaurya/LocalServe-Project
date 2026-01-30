@@ -1,14 +1,6 @@
-// src/components/pages/Home.jsx
 import React, { useMemo, useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import {
-  FaSearch,
-  FaFire,
-  FaChevronDown,
-  FaFilter,
-} from "react-icons/fa";
-import { Link } from "react-router-dom";
-
+import { FaSearch, FaFire, FaChevronDown, FaFilter } from "react-icons/fa";
 import { useServiceDiscovery } from "../../hooks/useServiceDiscovery";
 import ServiceCard from "../service/ServiceCard";
 import ServiceFilters from "../service/ServiceFilters";
@@ -17,12 +9,12 @@ import EmptyState from "../states/EmptyState";
 
 const RECENT_SEARCH_KEY = "local-service-discovery:recent-searches";
 const VENDOR_SERVICES_KEY = "local-service-discovery:vendor-services";
+const ADMIN_STATE_KEY = "local-service-discovery:admin-service-state";
 
 export default function Home() {
   const {
     services,
     filteredServices,
-    totalCount,
     loading,
     error,
     search,
@@ -34,12 +26,10 @@ export default function Home() {
     resetFilters,
   } = useServiceDiscovery();
 
-  // 🔐 Login state
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
     return localStorage.getItem("isLoggedIn") === "true";
   });
 
-  // keep it in sync if login changes in another tab / somewhere else
   useEffect(() => {
     const handleStorage = () => {
       setIsLoggedIn(localStorage.getItem("isLoggedIn") === "true");
@@ -52,6 +42,9 @@ export default function Home() {
   const [visibleCount, setVisibleCount] = useState(9);
   const [showFilters, setShowFilters] = useState(true);
   const [vendorServices, setVendorServices] = useState([]);
+  const [adminState, setAdminState] = useState({});
+  const [showVerifiedOnly, setShowVerifiedOnly] = useState(false);
+
   const [recentSearches, setRecentSearches] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem(RECENT_SEARCH_KEY) || "[]");
@@ -60,16 +53,12 @@ export default function Home() {
     }
   });
 
-  // Load recent searches
   useEffect(() => {
     try {
       localStorage.setItem(RECENT_SEARCH_KEY, JSON.stringify(recentSearches));
-    } catch {
-      // ignore
-    }
+    } catch {}
   }, [recentSearches]);
 
-  // 🔹 Load dynamic vendor services from localStorage once
   useEffect(() => {
     try {
       const stored =
@@ -79,6 +68,38 @@ export default function Home() {
       setVendorServices([]);
     }
   }, []);
+
+  useEffect(() => {
+    const loadAdminState = () => {
+      try {
+        const s =
+          JSON.parse(localStorage.getItem(ADMIN_STATE_KEY) || "{}") || {};
+        setAdminState(s);
+      } catch {
+        setAdminState({});
+      }
+    };
+    loadAdminState();
+    window.addEventListener("storage", loadAdminState);
+    return () => window.removeEventListener("storage", loadAdminState);
+  }, []);
+
+  const getSource = (s) => s.source || (s.fromVendor ? "vendor" : "static");
+
+  const applyAdminOverrides = (s) => {
+    const key = `${getSource(s)}:${s.id}`;
+    const override = adminState[key] || {};
+    const adminRemoved = !!override.removed;
+    const adminVerified = override.isVerified ?? s.isVerified ?? s.verified ?? false;
+
+    return {
+      ...s,
+      adminRemoved,
+      adminVerified,
+      isVerified: adminVerified,
+      verified: adminVerified,
+    };
+  };
 
   const handleSearchChange = (e) => {
     setSearch(e.target.value);
@@ -102,97 +123,149 @@ export default function Home() {
     setSearch(term);
   };
 
-  // For filter dropdowns, include both static & dynamic services
-  const allServicesForMeta = useMemo(
-    () => [...services, ...vendorServices],
-    [services, vendorServices]
+  const adminAllStatic = useMemo(
+    () => services.map(applyAdminOverrides).filter((s) => !s.adminRemoved),
+    [services, adminState]
   );
 
-  const categories = [
-    "all",
-    ...new Set(allServicesForMeta.map((s) => s.category)),
-  ];
-  const locations = [
-    "all",
-    ...new Set(allServicesForMeta.map((s) => s.location)),
-  ];
+  const adminVendorServices = useMemo(
+    () =>
+      vendorServices
+        .map(applyAdminOverrides)
+        .filter((s) => !s.adminRemoved),
+    [vendorServices, adminState]
+  );
+
+  const allServicesForMeta = useMemo(
+    () => [...adminAllStatic, ...adminVendorServices],
+    [adminAllStatic, adminVendorServices]
+  );
+
+  const categories = useMemo(
+    () => ["all", ...new Set(allServicesForMeta.map((s) => s.category))],
+    [allServicesForMeta]
+  );
+
+  const locations = useMemo(
+    () => ["all", ...new Set(allServicesForMeta.map((s) => s.location))],
+    [allServicesForMeta]
+  );
+
   const availabilities = ["all", "Available", "Busy", "Offline"];
 
-  // 🔹 Apply search + filters also to vendorServices so behavior is consistent
+  const adminFilteredStatic = useMemo(
+    () =>
+      filteredServices
+        .map(applyAdminOverrides)
+        .filter((s) => {
+          if (s.adminRemoved) return false;
+          if (showVerifiedOnly && !s.isVerified && !s.verified) return false;
+          return true;
+        }),
+    [filteredServices, adminState, showVerifiedOnly]
+  );
+
   const dynamicFiltered = useMemo(() => {
     const term = search.trim().toLowerCase();
 
-    return vendorServices.filter((s) => {
-      // Search filter
+    return adminVendorServices.filter((s) => {
       if (term) {
-        const text = `${s.name || ""} ${s.category || ""} ${
-          s.location || ""
-        }`.toLowerCase();
+        const text = `${s.name || ""} ${s.category || ""} ${s.location || ""}`.toLowerCase();
         if (!text.includes(term)) return false;
       }
 
-      // Category filter
       if (filters.category && filters.category !== "all") {
         if ((s.category || "").toLowerCase() !== filters.category.toLowerCase())
           return false;
       }
 
-      // Location filter
       if (filters.location && filters.location !== "all") {
         if ((s.location || "").toLowerCase() !== filters.location.toLowerCase())
           return false;
       }
 
-      // Availability / status filter (if present)
       if (filters.availability && filters.availability !== "all") {
         if (!s.status || s.status !== filters.availability) return false;
       }
 
-      // Favorites-only filter
       if (filters.showFavoritesOnly && !favoriteIds.includes(s.id)) {
+        return false;
+      }
+
+      if (showVerifiedOnly && !s.isVerified && !s.verified) {
         return false;
       }
 
       return true;
     });
-  }, [vendorServices, search, filters, favoriteIds]);
+  }, [adminVendorServices, search, filters, favoriteIds, showVerifiedOnly]);
 
-  // 🔹 Merge static filteredServices + dynamicFiltered
   const mergedFilteredServices = useMemo(
-    () => [...filteredServices, ...dynamicFiltered],
-    [filteredServices, dynamicFiltered]
+    () => [...adminFilteredStatic, ...dynamicFiltered],
+    [adminFilteredStatic, dynamicFiltered]
   );
 
-  // Recommended services uses merged list & verified vendors (if you show them somewhere)
-  const recommendedServices = useMemo(() => {
-    const mergedAll = [...services, ...vendorServices];
-    return mergedAll
-      .filter((s) => favoriteIds.includes(s.id) && (s.isVerified || s.verified))
-      .sort((a, b) => (b.rating || 0) - (a.rating || 0))
-      .slice(0, 3);
-  }, [services, vendorServices, favoriteIds]);
+  const DEFAULT_USER_LOCATION = "New York";
 
-  // Sorting now works on merged filtered list
-  const sortedServices = useMemo(() => {
+  const getUserLocation = () => {
+    try {
+      const u = JSON.parse(localStorage.getItem("authUser") || "null");
+      return u?.location || u?.city || DEFAULT_USER_LOCATION;
+    } catch {
+      return DEFAULT_USER_LOCATION;
+    }
+  };
+
+  const normalize = (s) => String(s || "").trim().toLowerCase();
+
+  const locationScore = (serviceLoc, userLoc) => {
+    const s = normalize(serviceLoc);
+    const u = normalize(userLoc);
+    if (!s || !u) return 0;
+    if (s === u) return 1;
+    if (s.includes(u) || u.includes(s)) return 0.8;
+    return 0;
+  };
+
+  const rankedServices = useMemo(() => {
+    const userLoc = getUserLocation();
     const list = [...mergedFilteredServices];
 
-    switch (sortBy) {
-      case "rating-desc":
-        return list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-      case "name-asc":
-        return list.sort((a, b) => a.name.localeCompare(b.name));
-      case "status-availability":
-        const score = (s) =>
-          s.status === "Available" ? 0 : s.status === "Busy" ? 1 : 2;
-        return list.sort((a, b) => score(a) - score(b));
-      case "relevance":
-      default:
-        return list;
+    const withScore = list.map((s) => {
+      const loc = locationScore(s.location, userLoc);
+      const ratingNorm = Math.min(5, Math.max(0, s.rating || 0)) / 5;
+      const availabilityBoost =
+        s.status === "Available" ? 1 : s.status === "Busy" ? 0.5 : 0;
+
+      const score = loc * 0.5 + ratingNorm * 0.35 + availabilityBoost * 0.15;
+      return { ...s, __rankScore: score };
+    });
+
+    withScore.sort((a, b) => (b.__rankScore || 0) - (a.__rankScore || 0));
+
+    if (sortBy === "rating-desc") {
+      withScore.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    } else if (sortBy === "name-asc") {
+      withScore.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    } else if (sortBy === "status-availability") {
+      const scoreStatus = (s) =>
+        s.status === "Available" ? 0 : s.status === "Busy" ? 1 : 2;
+      withScore.sort((a, b) => scoreStatus(a) - scoreStatus(b));
     }
+
+    const topN = 3;
+
+    return withScore.map((s, idx) => ({
+      ...s,
+      rankMeta: {
+        score: s.__rankScore,
+        isTop: idx < topN,
+      },
+    }));
   }, [mergedFilteredServices, sortBy]);
 
-  const visibleServices = sortedServices.slice(0, visibleCount);
-  const canLoadMore = visibleCount < sortedServices.length;
+  const visibleServices = rankedServices.slice(0, visibleCount);
+  const canLoadMore = visibleCount < rankedServices.length;
 
   const fadeIn = {
     hidden: { opacity: 0, y: 30 },
@@ -206,6 +279,8 @@ export default function Home() {
       },
     },
   };
+
+  const totalPublicServices = allServicesForMeta.length;
 
   return (
     <div className="home-page">
@@ -431,10 +506,6 @@ export default function Home() {
           padding: 20px 0 80px;
         }
 
-        .section-header {
-          margin-bottom: 32px;
-        }
-
         .results-info {
           display: flex;
           justify-content: space-between;
@@ -517,60 +588,29 @@ export default function Home() {
           }
         }
 
-        .public-header {
-          width: 100%;
-          background: #ffffff;
-          border-bottom: 1px solid #e2e8f0;
-          position: sticky;
-          top: 0;
-          z-index: 50;
-        }
-
-        .public-header-inner {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 12px 0;
-        }
-
-        .public-logo {
-          font-size: 20px;
-          font-weight: 800;
-          color: #1e293b;
-          letter-spacing: 0.03em;
-        }
-
-        .public-actions {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .public-link {
-          font-size: 14px;
-          color: #475569;
-          text-decoration: none;
-          font-weight: 600;
-        }
-
-        .public-link:hover {
-          color: #1d4ed8;
-        }
-
-        .public-cta {
-          padding: 8px 18px;
-          border-radius: 999px;
+        .verified-toggle-btn {
+          background: #e0f2fe;
           border: none;
-          background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-          color: #ffffff;
-          font-size: 14px;
-          font-weight: 700;
-          text-decoration: none;
-          box-shadow: 0 8px 16px rgba(37,99,235,0.25);
+          padding: 10px 18px;
+          border-radius: 999px;
+          font-size: 13px;
+          font-weight: 600;
+          color: #0369a1;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin-left: 8px;
         }
 
-        .public-cta:hover {
-          filter: brightness(1.05);
+        .verified-toggle-btn:hover {
+          background: #bae6fd;
+        }
+
+        .verified-toggle-btn-active {
+          background: #0369a1;
+          color: #ffffff;
         }
       `}</style>
 
@@ -667,9 +707,7 @@ export default function Home() {
         >
           <div className="stats-grid">
             <div className="stat-item">
-              <span className="stat-number">
-                {totalCount + vendorServices.length}+
-              </span>
+              <span className="stat-number">{totalPublicServices}+</span>
               <span className="stat-label">Service Providers</span>
             </div>
             <div className="stat-item">
@@ -701,18 +739,32 @@ export default function Home() {
               <FaFilter />
               Filter & Sort Services
             </h2>
-            <button
-              className="toggle-filters-btn"
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              {showFilters ? "Hide Filters" : "Show Filters"}
-              <FaChevronDown
-                style={{
-                  transform: showFilters ? "rotate(180deg)" : "rotate(0deg)",
-                  transition: "transform 0.3s ease",
-                }}
-              />
-            </button>
+
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <button
+                className="toggle-filters-btn"
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                {showFilters ? "Hide Filters" : "Show Filters"}
+                <FaChevronDown
+                  style={{
+                    transform: showFilters ? "rotate(180deg)" : "rotate(0deg)",
+                    transition: "transform 0.3s ease",
+                  }}
+                />
+              </button>
+
+              <button
+                type="button"
+                className={
+                  "verified-toggle-btn" +
+                  (showVerifiedOnly ? " verified-toggle-btn-active" : "")
+                }
+                onClick={() => setShowVerifiedOnly((prev) => !prev)}
+              >
+                {showVerifiedOnly ? "Showing Verified Only" : "Verified Services"}
+              </button>
+            </div>
           </div>
 
           {showFilters && (
@@ -729,9 +781,10 @@ export default function Home() {
                 onReset={() => {
                   resetFilters();
                   setVisibleCount(9);
+                  setShowVerifiedOnly(false);
                 }}
-                totalCount={totalCount + vendorServices.length}
-                visibleCount={sortedServices.length}
+                totalCount={totalPublicServices}
+                visibleCount={rankedServices.length}
                 categories={categories}
                 locations={locations}
                 availabilities={availabilities}
@@ -746,7 +799,6 @@ export default function Home() {
         </motion.div>
       </div>
 
-      {/* SERVICES SECTION */}
       <div className="services-section">
         <div className="container">
           {loading && <Loading />}
@@ -759,23 +811,16 @@ export default function Home() {
             </div>
           )}
 
-          {!loading && !error && sortedServices.length === 0 && <EmptyState />}
+          {!loading && !error && rankedServices.length === 0 && <EmptyState />}
 
-          {!loading && !error && sortedServices.length > 0 && (
+          {!loading && !error && rankedServices.length > 0 && (
             <>
               <div className="results-info">
                 <p className="results-text">
-                  Showing{" "}
-                  <span className="results-count">
-                    {visibleServices.length}
-                  </span>{" "}
-                  of{" "}
-                  <span className="results-count">
-                    {sortedServices.length}
-                  </span>{" "}
-                  services
+                  Showing <span className="results-count">{visibleServices.length}</span> of{" "}
+                  <span className="results-count">{rankedServices.length}</span> services
                 </p>
-                {sortedServices.length > 20 && (
+                {rankedServices.length > 20 && (
                   <span className="trending-badge">
                     <FaFire />
                     Trending Now
@@ -798,6 +843,7 @@ export default function Home() {
                   >
                     <ServiceCard
                       service={service}
+                      rankMeta={service.rankMeta}
                       isFavorite={favoriteIds.includes(service.id)}
                       onToggleFavorite={() => toggleFavorite(service.id)}
                       isLoggedIn={isLoggedIn}
@@ -815,9 +861,7 @@ export default function Home() {
                 >
                   <button
                     className="load-more-btn"
-                    onClick={() =>
-                      setVisibleCount((prev) => prev + 9)
-                    }
+                    onClick={() => setVisibleCount((prev) => prev + 9)}
                   >
                     Load More Services
                     <FaChevronDown />

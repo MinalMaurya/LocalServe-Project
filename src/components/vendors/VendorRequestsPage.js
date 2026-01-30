@@ -50,7 +50,9 @@ export default function VendorRequestsPage() {
   const [statusFilter, setStatusFilter] = useState(() =>
     normalizeFilter(searchParams.get("filter"))
   );
-
+useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   /* 🔹 keep tab in sync with ?filter=pending/accepted/... */
   useEffect(() => {
     setStatusFilter(normalizeFilter(searchParams.get("filter")));
@@ -91,8 +93,6 @@ export default function VendorRequestsPage() {
       setVendorServiceName("");
     }
   }, []);
-
-  /* 🔹 Load ONLY this vendor's requests from localStorage */
   useEffect(() => {
     if (!session) {
       setRequests([]);
@@ -105,12 +105,11 @@ export default function VendorRequestsPage() {
 
       const mine = stored
         .filter((r) => {
-          // New format: explicit serviceId
           if (r.serviceId != null) {
             return r.serviceId === session.serviceId;
           }
 
-          // Old format: match by service name
+          // Old format match by service name
           if (!vendorServiceName) return false;
           const name = (r.serviceName || r.name || "")
             .trim()
@@ -162,7 +161,6 @@ export default function VendorRequestsPage() {
     return requests;
   }, [requests, statusFilter]);
 
-  /* 🔹 Accept / Reject handler – updates state + localStorage */
   const handleUpdateStatus = (indexInFiltered, newStatus) => {
     const pretty = newStatus; // "Accepted" / "Rejected"
     const lower = newStatus.toLowerCase();

@@ -1,8 +1,9 @@
-// src/hooks/useServiceDiscovery.js
+
 import { useEffect, useMemo, useState } from "react";
 import servicesData from "../data/services.json";
 
 const LS_KEY_FAVORITES = "local-service-discovery:favorites";
+const LS_KEY_ADMIN_OVERRIDES = "local-service-discovery:admin-services";
 
 export function useServiceDiscovery() {
   const [services, setServices] = useState([]);
@@ -15,7 +16,7 @@ export function useServiceDiscovery() {
     location: "all",
     availability: "all",
     onlyFavorites: false,
-    onlyVerified: false, // ✅ new
+    onlyVerified: false,
   });
 
   const [favoriteIds, setFavoriteIds] = useState(() => {
@@ -27,31 +28,61 @@ export function useServiceDiscovery() {
     }
   });
 
-  // Fake loading + "fetch"
+
+  const loadServices = () => {
+    try {
+      // 1) start from static JSON
+      const base = servicesData.map((s) => ({
+        ...s,
+    
+        approved: s.approved ?? true,
+        removed: s.removed ?? false,
+        verified: s.verified ?? false,
+      }));
+
+    
+      let overrides = [];
+      try {
+        overrides =
+          JSON.parse(localStorage.getItem(LS_KEY_ADMIN_OVERRIDES) || "[]") ||
+          [];
+      } catch {
+        overrides = [];
+      }
+
+      const merged = base.map((svc) => {
+        const ov = overrides.find((o) => o.id === svc.id);
+        return ov ? { ...svc, ...ov } : svc;
+      });
+
+      setServices(merged);
+      setLoading(false);
+    } catch (e) {
+      console.error(e);
+      setError("Something went wrong while loading services.");
+      setLoading(false);
+    }
+  };
   useEffect(() => {
     setLoading(true);
     setError(null);
 
     const timer = setTimeout(() => {
-      try {
-        setServices(servicesData);
-        setLoading(false);
-      } catch (e) {
-        console.error(e);
-        setError("Something went wrong while loading services.");
-        setLoading(false);
-      }
-    }, ); // 0.9s fake delay
+      loadServices();
+    }, 900); 
 
     return () => clearTimeout(timer);
   }, []);
 
-  // Persist favourites
+  const refreshServices = () => {
+    setLoading(true);
+    loadServices();
+  };
   useEffect(() => {
     try {
       localStorage.setItem(LS_KEY_FAVORITES, JSON.stringify(favoriteIds));
     } catch {
-      // ignore
+
     }
   }, [favoriteIds]);
 
@@ -80,12 +111,15 @@ export function useServiceDiscovery() {
     const query = search.trim().toLowerCase();
 
     return services.filter((service) => {
-      // favourites
+      if (service.removed) return false;
+      if (service.approved === false) return false;
+
+
       if (filters.onlyFavorites && !favoriteIds.includes(service.id)) {
         return false;
       }
 
-      // verified only
+      // verified-only
       if (filters.onlyVerified && !service.verified) {
         return false;
       }
@@ -95,12 +129,11 @@ export function useServiceDiscovery() {
         return false;
       }
 
-      // location
+
       if (filters.location !== "all" && service.location !== filters.location) {
         return false;
       }
 
-      // availability (maps to service.status)
       if (
         filters.availability !== "all" &&
         service.status !== filters.availability
@@ -130,5 +163,6 @@ export function useServiceDiscovery() {
     favoriteIds,
     toggleFavorite,
     resetFilters,
+    refreshServices, 
   };
 }

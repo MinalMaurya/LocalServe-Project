@@ -1,5 +1,4 @@
-// src/components/service/ServiceReviewForm.js
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FaStar } from "react-icons/fa";
 import { motion } from "framer-motion";
 
@@ -8,17 +7,22 @@ const REVIEWS_KEY = "local-service-discovery:vendor-reviews";
 export default function ServiceReviewForm({
   serviceId,
   serviceName,
-  onReviewSaved, // ✅ new callback from parent
+  onReviewSaved,
+
+  // edit mode from ServiceDetails (click Edit on card)
+  editingReview = null,
+  onCancelEdit,
 }) {
-  const authUser = JSON.parse(localStorage.getItem("authUser"));
+  const authUser = JSON.parse(localStorage.getItem("authUser") || "null");
   const isVendor = authUser?.role === "vendor";
-  const userId = authUser?.id || authUser?.email; // fallback if no id
+  const userId = authUser?.id || authUser?.email || null;
 
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [text, setText] = useState("");
-  const [status, setStatus] = useState(null); // "success" | null
+  const [status, setStatus] = useState(null);
   const [error, setError] = useState("");
+
   const [reviews, setReviews] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem(REVIEWS_KEY) || "[]");
@@ -26,101 +30,122 @@ export default function ServiceReviewForm({
       return [];
     }
   });
- const [isNewReview, setIsNewReview] = useState(false);
-  const existingReview =
-    authUser &&
-    reviews.find(
-      (r) => r.serviceId === serviceId && r.userId === userId
-    );
 
-  // pre-fill when user has already reviewed this service
+  const isEditing = !!(editingReview && editingReview.id);
+
+  // reload list if storage changes outside (optional safety)
   useEffect(() => {
-    if (existingReview && !isNewReview) {
-      setRating(existingReview.rating);
-      setText(existingReview.text);
+    try {
+      setReviews(JSON.parse(localStorage.getItem(REVIEWS_KEY) || "[]"));
+    } catch {
+      setReviews([]);
     }
-    if (!existingReview && !isNewReview) {
-      setRating(0);
-      setText("");
+  }, [serviceId]);
+
+  // when editing review changes, load it into form
+  useEffect(() => {
+    setStatus(null);
+    setError("");
+
+    if (isEditing) {
+      setRating(editingReview?.rating || 0);
+      setHoverRating(0);
+      setText(editingReview?.text || "");
+      return;
     }
-  }, [existingReview, isNewReview]);
+
+    // NOT editing -> always blank for NEW submission
+    setRating(0);
+    setHoverRating(0);
+    setText("");
+  }, [isEditing, editingReview?.id]); // important: only when id changes
+
+  const persist = (updatedList) => {
+    setReviews(updatedList);
+    localStorage.setItem(REVIEWS_KEY, JSON.stringify(updatedList));
+    if (onReviewSaved) onReviewSaved(updatedList);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    setError("");
     setStatus(null);
+    setError("");
 
     if (!authUser) {
       setError("You need to be logged in to leave a review.");
       return;
     }
-
     if (isVendor) {
-      setError("Vendors can’t review their own services here.");
+      setError("Vendors can’t review their own services.");
       return;
     }
-
     if (!rating) {
-      setError("Please select a star rating.");
+      setError("Please select a rating.");
       return;
     }
-
     if (!text.trim()) {
-      setError("Please write something about your experience.");
+      setError("Please write a review.");
       return;
     }
 
     const now = new Date();
+    const nowIso = now.toISOString();
 
-        // 🔹 Decide ID: if editing existing & not in "new" mode → keep same id
-    // otherwise create a fresh unique id so old reviews are preserved
-    const reviewId =
-      existingReview && !isNewReview
-        ? existingReview.id
-        : `${serviceId}-${userId}-${Date.now()}`;
+    if (isEditing) {
+      // ✅ update ONLY the selected review id
+      const updatedReview = {
+        ...editingReview,
+        serviceId,
+        serviceName,
+        userId: editingReview.userId || userId,
+        customerId: editingReview.customerId || userId,
+        customerName: editingReview.customerName || authUser.name || "Customer",
+        rating,
+        text: text.trim(),
+        updatedAt: nowIso,
+        readableDate: now.toLocaleString(),
+        date: now.toLocaleDateString(),
+      };
 
+      const updatedList = reviews.map((r) =>
+        String(r.id) === String(editingReview.id) ? updatedReview : r
+      );
+
+      persist(updatedList);
+      setStatus("success");
+
+      if (onCancelEdit) onCancelEdit();
+      return;
+    }
+
+    // ✅ NEW review submission always allowed (multiple reviews)
     const newReview = {
-      id: reviewId,
+      id: `${serviceId}-${userId}-${Date.now()}`,
       serviceId,
       serviceName,
       userId,
+      customerId: userId, // for ownership checks in ServiceDetails
       customerName: authUser.name || "Customer",
       rating,
       text: text.trim(),
+      createdAt: nowIso,
+      updatedAt: nowIso,
+      readableDate: now.toLocaleString(),
       date: now.toLocaleDateString(),
-      createdAt: existingReview?.createdAt || now.toISOString(),
-      updatedAt: now.toISOString(),
     };
 
-    let updated;
-    if (existingReview && !isNewReview) {
-      // ✅ edit mode: replace the existing one
-      updated = reviews.map((r) =>
-        r.id === existingReview.id ? newReview : r
-      );
-    } else {
-      // ✅ new mode: append a fresh review
-      updated = [...reviews, newReview];
-    }
+    const updatedList = [...reviews, newReview];
+    persist(updatedList);
 
-    setReviews(updated);
-    localStorage.setItem(REVIEWS_KEY, JSON.stringify(updated));
-
-    if (onReviewSaved) {
-      onReviewSaved(updated); // keep parent in sync
-    }
-
-    setIsNewReview(false); // go back to "edit last one" mode
+    setRating(0);
+    setHoverRating(0);
+    setText("");
     setStatus("success");
-
-    // 🔁 notify parent so it updates avg rating + past reviews without refresh
-    if (typeof onReviewSaved === "function") {
-      onReviewSaved(updated);
-    }
   };
-      // ✅ Clear form for a fresh, separate review (does NOT overwrite old one)
+
   const handleNewReviewClick = () => {
-    setIsNewReview(true);     // 🟡 very important
+    // if editing, cancel edit and clear
+    if (onCancelEdit) onCancelEdit();
     setRating(0);
     setHoverRating(0);
     setText("");
@@ -128,13 +153,16 @@ export default function ServiceReviewForm({
     setError("");
   };
 
-  const fadeIn = {
-    hidden: { opacity: 0, y: 15 },
-    visible: { opacity: 1, y: 0 },
-  };
+  const fadeIn = useMemo(
+    () => ({
+      hidden: { opacity: 0, y: 15 },
+      visible: { opacity: 1, y: 0 },
+    }),
+    []
+  );
 
   return (
-    <div className="service-review-wrapper mt-4">
+    <div id="service-review-form" className="service-review-wrapper mt-4">
       <style>{`
         .service-review-card {
           background: #ffffff;
@@ -144,25 +172,17 @@ export default function ServiceReviewForm({
           padding: 24px 22px;
           margin-top: 16px;
         }
-
         .service-review-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
           margin-bottom: 8px;
         }
-
         .service-review-title {
           font-size: 18px;
           font-weight: 800;
           color: #0f172a;
         }
-
-        .service-review-subtitle {
-          font-size: 13px;
-          color: #64748b;
-        }
-
         .existing-tag {
           font-size: 11px;
           color: #0f172a;
@@ -170,35 +190,21 @@ export default function ServiceReviewForm({
           border-radius: 999px;
           padding: 4px 10px;
           font-weight: 600;
-          white-space: nowrap;
         }
-
         .stars-row {
           display: flex;
           gap: 6px;
           margin: 14px 0 10px;
         }
-
         .star-btn {
-          border: none;
           background: none;
+          border: none;
           padding: 0;
           cursor: pointer;
           font-size: 26px;
-          transition: transform 0.12s ease;
         }
-
-        .star-btn:hover {
-          transform: translateY(-1px) scale(1.03);
-        }
-
-        .star-icon-active {
-          color: #facc15;
-        }
-        .star-icon-inactive {
-          color: #e2e8f0;
-        }
-
+        .star-icon-active { color: #facc15; }
+        .star-icon-inactive { color: #e2e8f0; }
         .review-textarea {
           width: 100%;
           border-radius: 16px;
@@ -206,16 +212,7 @@ export default function ServiceReviewForm({
           padding: 10px 12px;
           min-height: 80px;
           font-size: 14px;
-          resize: vertical;
-          outline: none;
-          transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
-
-        .review-textarea:focus {
-          border-color: #3b82f6;
-          box-shadow: 0 0 0 1px rgba(59,130,246,0.35);
-        }
-
         .review-actions-row {
           display: flex;
           justify-content: space-between;
@@ -224,76 +221,31 @@ export default function ServiceReviewForm({
           gap: 14px;
           flex-wrap: wrap;
         }
-
-        .review-hint {
-          font-size: 12px;
-          color: #94a3b8;
-        }
-
         .review-submit-btn {
           padding: 9px 20px;
           border-radius: 999px;
           border: none;
-          background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-          color: #ffffff;
+          background: linear-gradient(135deg,#3b82f6,#2563eb);
+          color: #fff;
           font-weight: 700;
-          font-size: 14px;
-          cursor: pointer;
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          box-shadow: 0 10px 20px rgba(37,99,235,0.35);
-          transition: transform 0.15s ease, box-shadow 0.15s ease;
         }
-
-        .review-submit-btn:hover:not(:disabled) {
-          transform: translateY(-1px);
-          box-shadow: 0 14px 26px rgba(37,99,235,0.45);
-        }
-
-        .review-submit-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-          box-shadow: none;
-        }
-
-        .review-status {
-          margin-top: 10px;
-          font-size: 13px;
-          font-weight: 500;
-        }
-
-        .review-status-success {
-          color: #16a34a;
-        }
-
-        .review-status-error {
-          color: #b91c1c;
-        }
-
-        @media (max-width: 768px) {
-          .service-review-card {
-            padding: 20px 18px;
-          }
-          .review-actions-row {
-            flex-direction: column;
-            align-items: flex-start;
-          }
-        }
-                  .review-secondary-btn {
+        .review-secondary-btn {
           padding: 9px 16px;
           border-radius: 999px;
           border: 1px solid #e5e7eb;
           background: #f9fafb;
-          color: #111827;
-          font-size: 13px;
           font-weight: 600;
-          cursor: pointer;
         }
-
-        .review-secondary-btn:hover {
-          background: #e5e7eb;
+        .review-danger-btn {
+          padding: 9px 16px;
+          border-radius: 999px;
+          border: 1px solid #fecaca;
+          background: #fff;
+          color: #b91c1c;
+          font-weight: 700;
         }
+        .review-status-success { color: #16a34a; margin-top: 10px; font-size: 13px; }
+        .review-status-error { color: #b91c1c; margin-top: 10px; font-size: 13px; }
       `}</style>
 
       <motion.div
@@ -305,23 +257,19 @@ export default function ServiceReviewForm({
         <div className="service-review-header">
           <div>
             <div className="service-review-title">
-              Share your experience
+              {isEditing ? "Edit your review" : "Share your experience"}
             </div>
-            <div className="service-review-subtitle">
-              Rate <strong>{serviceName}</strong> and help other customers.
+            <div style={{ fontSize: "13px", color: "#64748b" }}>
+              Rate <strong>{serviceName}</strong>.
             </div>
           </div>
-          {existingReview && (
-            <span className="existing-tag">You reviewed this</span>
-          )}
+
+          {isEditing && <span className="existing-tag">Editing</span>}
         </div>
 
-        {/* STARS */}
         <div className="stars-row">
           {[1, 2, 3, 4, 5].map((star) => {
-            const active = hoverRating
-              ? star <= hoverRating
-              : star <= rating;
+            const active = hoverRating ? star <= hoverRating : star <= rating;
             return (
               <button
                 type="button"
@@ -330,66 +278,58 @@ export default function ServiceReviewForm({
                 onMouseEnter={() => setHoverRating(star)}
                 onMouseLeave={() => setHoverRating(0)}
                 onClick={() => setRating(star)}
+                disabled={isVendor}
               >
-                <FaStar
-                  className={
-                    active ? "star-icon-active" : "star-icon-inactive"
-                  }
-                />
+                <FaStar className={active ? "star-icon-active" : "star-icon-inactive"} />
               </button>
             );
           })}
         </div>
 
-        {/* TEXT + SUBMIT */}
         <form onSubmit={handleSubmit}>
           <textarea
             className="review-textarea"
-            placeholder={
-              isVendor
-                ? "Vendors can’t leave reviews."
-                : "Tell others what you liked, what could be better, etc."
-            }
+            placeholder={isVendor ? "Vendors cannot review services." : "Share your thoughts..."}
             value={text}
             onChange={(e) => setText(e.target.value)}
             disabled={isVendor}
           />
 
-                 <div className="review-actions-row">
-          <span className="review-hint">
-            Your profile name will be shown with this review.
-          </span>
+          <div className="review-actions-row">
+            <span style={{ fontSize: "12px", color: "#94a3b8" }}>
+              Your profile name appears with your review.
+            </span>
 
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button
-              type="button"
-              className="review-secondary-btn"
-              onClick={handleNewReviewClick}
-            >
-              Submit another review
-            </button>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button
+                type="button"
+                className="review-secondary-btn"
+                onClick={handleNewReviewClick}
+              >
+                New review
+              </button>
 
-            <button
-              type="submit"
-              className="review-submit-btn"
-              disabled={!authUser || isVendor}
-            >
-              {existingReview ? "Update review" : "Submit review"}
-            </button>
+              {isEditing && (
+                <button
+                  type="button"
+                  className="review-danger-btn"
+                  onClick={() => onCancelEdit && onCancelEdit()}
+                >
+                  Cancel
+                </button>
+              )}
+
+              <button type="submit" className="review-submit-btn" disabled={isVendor}>
+                {isEditing ? "Save review" : "Submit review"}
+              </button>
+            </div>
           </div>
-        </div>
         </form>
 
-        {error && (
-          <div className="review-status review-status-error">
-            {error}
-          </div>
-        )}
+        {error && <div className="review-status-error">{error}</div>}
         {status === "success" && (
-          <div className="review-status review-status-success">
-            {existingReview
-              ? "Your review has been updated."
-              : "Thank you! Your review has been submitted."}
+          <div className="review-status-success">
+            {isEditing ? "Your review has been updated." : "Thank you! Review submitted."}
           </div>
         )}
       </motion.div>

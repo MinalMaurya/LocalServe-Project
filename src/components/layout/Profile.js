@@ -22,6 +22,8 @@ import {
 const VENDOR_SESSION_KEY = "local-service-discovery:vendor-session";
 const CONTACT_KEY = "local-service-discovery:contact-requests";
 const VENDOR_REVIEWS_KEY = "local-service-discovery:vendor-reviews";
+const VENDOR_SERVICES_KEY = "local-service-discovery:vendor-services";
+const VENDOR_PROFILE_KEY = "local-service-discovery:vendor-profiles";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -153,6 +155,10 @@ const historyList = JSON.parse(localStorage.getItem("history") || "[]");
     reviewsCount: 0,
   };
 
+  // NEW: for status box logic
+  let vendorAvailability = null;   // "Available", "Busy", "Offline", etc.
+  let vendorIsVerified = false;    // set by admin
+
   if (isVendor) {
     const vendorSession = JSON.parse(
       localStorage.getItem(VENDOR_SESSION_KEY) || "null"
@@ -198,6 +204,29 @@ const historyList = JSON.parse(localStorage.getItem("history") || "[]");
         pendingRequests: pending,
         reviewsCount: myReviews.length,
       };
+
+      // 🔹 NEW: read availability from vendor profile
+      try {
+        const allProfiles =
+          JSON.parse(localStorage.getItem(VENDOR_PROFILE_KEY) || "{}") || {};
+        const myProfile =
+          allProfiles[String(vendorSession.serviceId)] || {};
+        vendorAvailability = myProfile.availability || null;
+      } catch {
+        vendorAvailability = null;
+      }
+
+      // 🔹 NEW: read isVerified from vendor services
+      try {
+        const allVendorServices =
+          JSON.parse(localStorage.getItem(VENDOR_SERVICES_KEY) || "[]") || [];
+        const thisService = allVendorServices.find(
+          (s) => s.id === vendorSession.serviceId
+        );
+        vendorIsVerified = !!(thisService && thisService.isVerified);
+      } catch {
+        vendorIsVerified = false;
+      }
     }
   }
 
@@ -320,7 +349,43 @@ const historyList = JSON.parse(localStorage.getItem("history") || "[]");
     reader.readAsDataURL(file);
   };
 
-  const accountStatusLabel = isVendor ? "Active & Verified" : "Active";
+    // 🔹 Compute final status text + color for the Account Status box
+  let accountStatusLabel = "Active";
+  let accountStatusColor = "#0f172a";
+
+  if (!isVendor) {
+    // normal customer
+    accountStatusLabel = "Active";
+    accountStatusColor = "#0f172a";
+  } else {
+    const avail = (vendorAvailability || "").toLowerCase();
+
+    if (!vendorIsVerified && !vendorAvailability) {
+      // no profile availability set + not verified by admin
+      accountStatusLabel = "Unverified";
+      accountStatusColor = "#f97316"; // orange
+    } else if (vendorIsVerified) {
+      // ✅ VERIFIED by admin
+      accountStatusColor = "#10b981"; // green
+      if (avail === "busy") {
+        accountStatusLabel = "Busy · Verified";
+      } else if (avail === "available") {
+        accountStatusLabel = "Active · Verified";
+      } else {
+        accountStatusLabel = "Verified";
+      }
+    } else {
+      // ❗ Not verified but availability known
+      accountStatusColor = "#f97316"; // orange
+      if (avail === "busy") {
+        accountStatusLabel = "Busy · Not verified";
+      } else if (avail === "available") {
+        accountStatusLabel = "Active · Not verified";
+      } else {
+        accountStatusLabel = "Unverified";
+      }
+    }
+  }
 
 
   return (
@@ -1062,14 +1127,14 @@ const historyList = JSON.parse(localStorage.getItem("history") || "[]");
               </div>
             </div>
 
-            <div className="info-item">
+              <div className="info-item">
               <div className="info-label">
                 <FaShieldAlt size={12} />
                 Account Status
               </div>
               <div
                 className="info-value"
-                style={{ color: isVendor ? "#10b981" : "#0f172a" }}
+                style={{ color: accountStatusColor }}
               >
                 {accountStatusLabel}
               </div>
