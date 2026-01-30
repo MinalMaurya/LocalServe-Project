@@ -1,5 +1,7 @@
 # 🌐 LocalServe – Local Service Discovery & Booking Platform  
 
+## 🏆 Built during **Hack-It-Out 2.0 Hackathon (Jan 2026)** — 🥈 Runner-Up, Web Development Track
+
 A modern full-stack service-marketplace that connects **customers** with **local vendors** such as electricians, plumbers, tutors, mechanics, and home services.  
 Built with **React.js**, professional UI/UX, role-based navigation, vendor dashboards, review system, and fully localStorage-driven data persistence.
 
@@ -23,7 +25,7 @@ Built with **React.js**, professional UI/UX, role-based navigation, vendor dashb
 ## 📌 Project Overview
 
 **LocalServe** is built to simplify how people find and hire trusted local service experts.  
-It supports **two user roles**:
+It supports **three user roles**:
 
 ### 1️⃣ Customer
 - Explore all services openly
@@ -34,10 +36,42 @@ It supports **two user roles**:
 - View and manage customer requests  
 - Update profile (name, description, phone, location)  
 - See ratings & reviews  
-- Manage job status  
+- Manage job status
+  
+### 3️⃣ Admin
+- Moderates all services
+- Controls service visibility
+- Manages platform integrity
 
 Sessions and data are stored using **LocalStorage** so the app works fully without a backend.
+LocalServe was designed to demonstrate how a scalable, role-based service marketplace can be built using modern frontend practices without a backend dependency.
 
+---
+
+## 👥 Team & Contributions
+
+This project was developed as a **team effort** during the *Hack-It-Out 2.0 Hackathon*.  
+Each member contributed to specific modules of the application.
+
+### 👩‍💻 Minal Maurya
+- Service Provider (Vendor) module UI development  
+- Vendor dashboard implementation  
+- Analytics dashboards for **Admin** and **Service Provider** panels  
+- Data visualization and performance insights  
+- Role-based feature integration for vendors
+
+### 👩‍💻 Prachi Tripathi
+- Customer-side UI design and implementation  
+- Service discovery pages and user flow  
+- Favorites, requests, and customer interaction features  
+
+### 👩‍💻 Siddhi Gaikar
+- Admin-side UI development  
+- Service moderation interface  
+- Admin panel layouts and navigation  
+
+This collaboration ensured clear role separation, efficient development, and successful delivery within hackathon timelines.
+> ⏱️ Built within strict hackathon timelines, focusing on clarity, usability, and role-based system design rather than backend integration.
 ---
 
 ## ⭐ Features
@@ -102,7 +136,32 @@ Sessions and data are stored using **LocalStorage** so the app works fully witho
 - Filter by stars  
 - Sort by newest/oldest  
 - Shows customer name, review, date  
+---
 
+### 🛡️ Admin Features
+
+#### 🧭 Admin Dashboard
+- View all services (static + vendor-created)
+- Filter by status: Pending, Approved, Rejected, Removed
+- Analytics cards for service counts and moderation activity
+
+#### ✅ Service Moderation
+- Approve services (visible to customers)
+- Reject services (kept for review)
+- Remove services (hidden from platform)
+- Restore removed services back to pending
+- Rejected services remain visible to admins for review
+- Removed services are fully hidden from customers but can be restored
+
+#### 🔔 Vendor Notifications
+- Vendors receive notifications when:
+  - Service is approved
+  - Service is rejected
+  - Service is removed
+  - Service is restored
+- Notifications stored and managed via LocalStorage
+
+This module enforces **role-based access control**, ensuring only admins can manage platform-wide service visibility.
 ---
 
 ## 🛠 Tech Stack Used
@@ -123,8 +182,26 @@ Currently LocalStorage-based, but structured for:
 - MongoDB / PostgreSQL  
 - JWT authentication  
 - Cloud file storage  
-
 ---
+
+## 📸 Screenshots & Demo
+
+### 🏠 Home & Service Discovery
+
+
+### 👤 Customer Experience
+
+
+### 👨‍🔧 Vendor Dashboard
+
+
+### 🛡️ Admin Panel
+
+
+### 🎥 Demo Video
+▶️ Watch the full demo here:  
+
+--
 
 ## 📂 Folder Structure
 
@@ -133,25 +210,66 @@ Your project contains **exactly these files**, and the README now includes them:
 ```text
 src/
 ├── components/
+│   ├── Admin/
+│   │   ├── AdminAnalyticsOverview.js
+│   │   ├── AdminAnalyticsRatings.js
+│   │   ├── AdminAnalyticsService.js
+│   │   ├── AdminRejectedServicesPage.js
+│   │   ├── AdminServicesPage.js
+│   │   ├── adminHeader.js
+│   │   ├── adminLogin.js
+│   │   ├── adminProfile.js
+│   │   └── adminSignup.js
+│   │
 │   ├── layout/
-│   │   ├── Header.jsx
-│   │   ├── Footer.jsx
-│   │   ├── Home.jsx
-│   │   ├── About.jsx
-│   │   ├── Contact.jsx
-│   │   ├── Login.jsx
-│   │   ├── Signup.jsx
-│   │   ├── Profile.jsx
+│   │   ├── Header.js
+│   │   ├── Footer.js
+│   │   ├── Home.js
+│   │   ├── About.js
+│   │   ├── Contact.js
+│   │   ├── Login.js
+│   │   ├── Signup.js
+│   │   ├── Profile.js
+│   │   ├── MyRequests.js
+│   │   ├── Shortlist.js
+│   │   └── NotFound.js
+│   │
 │   ├── service/
-│   │   ├── ServiceCard.jsx
-│   │   ├── ServiceDetails.jsx
+│   │   ├── ServiceCard.js
+│   │   ├── ServiceDetails.js
+│   │   ├── ServiceFilters.js
+│   │   └── ServiceReviewForm.js
+│   │
 │   ├── vendors/
-│       ├── VendorDashboard.jsx
-│       ├── VendorRequestsPage.jsx
-│       ├── VendorReviewsPage.jsx
+│   │   ├── VendorAnalyticsPage.js
+│   │   ├── VendorDashboard.js
+│   │   ├── VendorRequestsPage.js
+│   │   └── VendorReviewsPage.js
+│   │
+│   ├── states/
+│   │   ├── EmptyState.js
+│   │   └── Loading.js
+│   │
+│   └── ui/
+│
+├── data/
+│   └── services.json
+│
+├── hooks/
+│   └── useServiceDiscovery.js
+│
+├── styles/
+│   └── theme.css
+│
+├── utils/
+│   ├── getMergedServices.js
+│   ├── reviewInsights.js
+│   └── smartRanking.js
+│
 ├── App.js
-├── App.css
-└── index.js
+├── index.js
+└── index.css
+
 
 ```
 
@@ -175,6 +293,21 @@ Below is the list of keys and what each one stores:
 - All data persists until manually cleared.  
 - Perfect for demos, frontend projects, UI/UX testing, and offline simulation.  
 - Can be replaced later with a backend (Node/Express + MongoDB/PostgreSQL).
+
+---
+
+## 🔐 Role-Based Access Control (RBAC)
+
+LocalServe enforces strict role-based navigation:
+
+| Role | Access |
+|-----|-------|
+| Guest | Browse services only |
+| Customer | Request services, favorites, reviews |
+| Vendor | Dashboard, requests, reviews |
+| Admin | Service moderation, analytics, notifications |
+
+Protected routes ensure unauthorized users cannot access restricted pages.
 
 ---
 
